@@ -18,28 +18,28 @@ pip install -r requirements.txt
 
 Running _**Dorkish**_ with command-line - info ::
 
-```sh
+```python
 python main.py --d YOUR_DORK --w WORKER/THREADS --a URL_AMOUNT
 ```
 
 Running _**Dorkish**_ with full command-line + info ::
 
-```sh
+```python
 python main.py --d YOUR_DORK --w WORKER/THREADS --a URL_AMOUNT --i --s --f OUTPUT_FILENAME
 ```
 
 Alternatively, you can run _**Dorkish**_ without command-line. The program will handle anything for you ::
 
-```sh
+```python
 python main.py
 ```
 
 ## **Example Output**
 
-- Example output without info :
+- Example output - info :
 ![Screenshot (20230620-082207)](https://github.com/x404xx/Dorkish-Searcher/assets/114883816/273977bd-31bc-4b9a-8339-fad619404707)
 
-- Example output with info :
+- Example output + info :
 ![Screenshot (20230620-081910)](https://github.com/x404xx/Dorkish-Searcher/assets/114883816/2425ba42-2686-4b22-b91c-aeb1e93e5356)
 
 - Example json file :
