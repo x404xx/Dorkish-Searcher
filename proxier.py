@@ -24,11 +24,11 @@ class ProxyChecker:
         return scheme, proxy_url
 
     def get_proxy(
-        self, prefix: str, proxy_url: str
+        self, scheme: str, proxy_url: str
         ):
 
         response = self.session.get(proxy_url)
-        proxy_list = [f'{prefix}://{proxy.strip()}' for proxy in response.text.splitlines()]
+        proxy_list = [f'{scheme}://{proxy.strip()}' for proxy in response.text.splitlines()]
         return proxy_list
 
     def limit_proxy(
