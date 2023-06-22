@@ -1,6 +1,6 @@
 <div align="center">
 
-# Dorkish <img src="https://korben.info/app/uploads/2019/06/googledork.jpg" width="50px">
+# Dorkish <img src="https://github.com/x404xx/Dorkish-Searcher/assets/114883816/b9afb512-86f1-4be1-98d2-2194e18f3ad3" width="90px">
 
 **Dorks Searcher** is an advanced tool for performing Google queries, also known as Google Dorks, with the added advantage of concurrent searching while equipped with an automatic proxy rotator.
 
