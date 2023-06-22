@@ -63,7 +63,7 @@ class DorkSearch:
         scraper = ProxyChecker(info)
         scheme, proxy_url = scraper.select_proxy()
         print(f'Auto selected protocol {Colors.CYAN}{scheme.upper()}{Colors.END}')
-        proxy_list = scraper.get_proxy(prefix, proxy_url)
+        proxy_list = scraper.get_proxy(scheme, proxy_url)
         print(f'Found {Colors.GREEN}{len(proxy_list)}{Colors.END} proxies!')
         return scraper, proxy_list
 
