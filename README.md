@@ -4,7 +4,7 @@
 
 **Dorks Searcher** is an advanced tool for performing Google queries, also known as Google Dorks, with the added advantage of concurrent searching while equipped with an automatic proxy rotator.
 
-<img src="https://1.bp.blogspot.com/-H0LJDWx6w7k/Uz5pUSj3TPI/AAAAAAAAAPI/w-I-i5LwLvM/s1600/OnionBD-Google.dork.gif" width="600" height="auto">
+<img src="https://github.com/x404xx/Dorkish-Searcher/assets/114883816/8b518969-21cf-4caa-b640-f1985482f7e1" width="600" height="auto">
 
 </div>
 
