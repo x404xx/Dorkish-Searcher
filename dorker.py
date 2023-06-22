@@ -155,7 +155,7 @@ class DorkSearch:
                             print(f'{Colors.WHITE}{idx}. {Colors.GREEN}{url}{Colors.END}')
                             cls.ALL_URLS.add(url)
                             start_from += 1
-                        
+
                         if start_from >= amount:
                             break
 
