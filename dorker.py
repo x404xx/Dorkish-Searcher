@@ -1,3 +1,4 @@
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from itertools import cycle
 from json import dump
@@ -56,7 +57,8 @@ class DorkSearch:
 
     @staticmethod
     def __handle_urls(response: Response):
-        return findall(r'f"><a href="(https:.*?)"', response)
+        urls = findall(r'f"><a href="(https:.*?)"', response)
+        return urls if urls else None
 
     @staticmethod
     def __fetch_proxies(info: bool):
@@ -150,14 +152,17 @@ class DorkSearch:
                     try:
                         response = future.result()
                         urls = cls.__handle_urls(response.text)
+                        if urls:
+                            for idx, url in enumerate(urls[:amount], start=start_from + 1):
+                                print(f'{Colors.WHITE}{idx}. {Colors.GREEN}{url}{Colors.END}')
+                                cls.ALL_URLS.add(url)
+                                start_from += 1
 
-                        for idx, url in enumerate(urls[:amount], start=start_from + 1):
-                            print(f'{Colors.WHITE}{idx}. {Colors.GREEN}{url}{Colors.END}')
-                            cls.ALL_URLS.add(url)
-                            start_from += 1
-
-                        if start_from >= amount:
-                            break
+                            if start_from >= amount:
+                                break
+                        else:
+                            print(f'\n{Colors.WHITE}No result found with the given dork "{Colors.RED}{dork}{Colors.END}"\n')
+                            sys.exit(0)
 
                     except RequestException as exc:
                         if len(valid_proxies) == 0:
