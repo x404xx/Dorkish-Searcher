@@ -2,7 +2,7 @@
 
 # Dorkish <img src="https://korben.info/app/uploads/2019/06/googledork.jpg" width="50px">
 
-**Dorks Searcher** advanced Google queries, also known as Google Dorks, with the added advantage of concurrent searching with auto proxy rotator.
+**Dorks Searcher** is an advanced tool for performing Google queries, also known as Google Dorks, with the added advantage of concurrent searching while equipped with an automatic proxy rotator.
 
 <img src="https://1.bp.blogspot.com/-H0LJDWx6w7k/Uz5pUSj3TPI/AAAAAAAAAPI/w-I-i5LwLvM/s1600/OnionBD-Google.dork.gif" width="600" height="auto">
 
@@ -19,13 +19,13 @@ pip install -r requirements.txt
 Running _**Dorkish**_ with command-line - info ::
 
 ```python
-python main.py --d YOUR_DORK --w WORKER/THREADS --a URL_AMOUNT
+python main.py -d YOUR_DORK -w WORKER/THREADS -a URL_AMOUNT
 ```
 
-Running _**Dorkish**_ with full command-line + info ::
+Running _**Dorkish**_ with full command-line + info + filename::
 
 ```python
-python main.py --d YOUR_DORK --w WORKER/THREADS --a URL_AMOUNT --i --s --f OUTPUT_FILENAME
+python main.py -d YOUR_DORK -w WORKER/THREADS -a URL_AMOUNT -i -s -f OUTPUT_FILENAME(Without Extension)
 ```
 
 Alternatively, you can run _**Dorkish**_ without command-line. The program will handle anything for you ::
@@ -36,10 +36,10 @@ python main.py
 
 ## **Example Output**
 
-- Example output - info :
+- Output - info :
 ![Screenshot (20230620-082207)](https://github.com/x404xx/Dorkish-Searcher/assets/114883816/273977bd-31bc-4b9a-8339-fad619404707)
 
-- Example output + info :
+- Output + info :
 ![Screenshot (20230620-081910)](https://github.com/x404xx/Dorkish-Searcher/assets/114883816/2425ba42-2686-4b22-b91c-aeb1e93e5356)
 
 - Example json file :
