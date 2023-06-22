@@ -14,7 +14,8 @@ class ProxyChecker:
         3: ('socks5', 'https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks5.txt')
     }
 
-    def __init__(self):
+    def __init__(self, info: bool):
+        self.info = info
         self.session = Session()
         self.valid_proxies = set()
 
@@ -46,10 +47,14 @@ class ProxyChecker:
             response = self.session.get(self.CHECK_URL, proxies=proxies, timeout=10)
             if response.status_code == 200:
                 self.valid_proxies.add(proxy)
-                print(f'Got ({Colors.BGREEN}{len(self.valid_proxies)}{Colors.END}) live proxy!', end='\r')
+                if self.info:
+                    print(f'{Colors.WHITE}[{Colors.BGREEN}LIVE{Colors.WHITE}]{Colors.END} {proxy}')
+                else:
+                    print(f'Got ({Colors.BGREEN}{len(self.valid_proxies)}{Colors.END}) live proxy!', end='\r')
 
         except RequestException:
-            pass
+            if self.info:
+                print(f'{Colors.WHITE}[{Colors.RED}DEAD{Colors.WHITE}]{Colors.END} {proxy}')
 
     def start_checking(
         self, proxy_limit: list, worker=50
