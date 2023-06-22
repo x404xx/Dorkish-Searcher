@@ -8,6 +8,10 @@
 
 </div>
 
+## **Dork Collections**
+
+- [13374 Dorks](https://raw.githubusercontent.com/x404xx/Dorkish-Searcher/main/dorks_collection.txt)
+
 ## **Usage**
 
 To use _**Dorkish**_, open your terminal and navigate to the folder that contains _**Dorkish**_ content ::
