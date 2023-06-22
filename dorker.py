@@ -196,8 +196,8 @@ class DorkSearch:
 
         search_started = time()
         cls.__search_dorks(dork, amount, worker, info)
-        search_ended = time()
         print(f'\n{Colors.LYELLOW}Searching time taken: {cls.__time_taken(search_started)}')
+        
         if file_name is None:
             file_name = input('\nYour filename (Without Extension): ')
 
