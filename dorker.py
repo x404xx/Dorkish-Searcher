@@ -161,7 +161,7 @@ class DorkSearch:
                             if start_from >= amount:
                                 break
                         else:
-                            print(f'\n{Colors.WHITE}No result found with the given dork "{Colors.RED}{dork}{Colors.END}"\n')
+                            print(f'\n{Colors.WHITE}No result found with the given dork{Colors.END} "{Colors.RED}{dork}{Colors.END}"\n')
                             sys.exit(0)
 
                     except RequestException as exc:
