@@ -1,9 +1,9 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from itertools import cycle
 from json import dump
-from random import shuffle, uniform
+from random import shuffle
 from re import findall
-from time import sleep, time
+from time import time
 
 from requests import RequestException, Response, get
 from user_agent import generate_user_agent as ua
@@ -59,8 +59,8 @@ class DorkSearch:
         return findall(r'f"><a href="(https:.*?)"', response)
 
     @staticmethod
-    def __fetch_proxies():
-        scraper = ProxyChecker()
+    def __fetch_proxies(info: bool):
+        scraper = ProxyChecker(info)
         scheme, proxy_url = scraper.select_proxy()
         print(f'Auto selected protocol {Colors.CYAN}{scheme.upper()}{Colors.END}')
         proxy_list = scraper.get_proxy(prefix, proxy_url)
@@ -74,8 +74,7 @@ class DorkSearch:
 
         proxy_started = time()
         scraper.start_checking(proxy_limit, worker)
-        proxy_ended = time()
-        print(f'\n\n{Colors.LYELLOW}Checking proxy time taken: {cls.__time_taken(proxy_started * 1000, proxy_ended * 1000)}\n')
+        print(f'\n\n{Colors.LYELLOW}Checking proxy time taken: {cls.__time_taken(proxy_started)}\n')
         valid_proxies = list(scraper.valid_proxies)
         return valid_proxies
 
@@ -93,17 +92,19 @@ class DorkSearch:
         return proxies_list
 
     @staticmethod
-    def __time_taken(start_time, end_time):
-        elapsed_time = end_time - start_time
+    def __time_taken(started_time):
+        elapsed = round((time() - started_time), 2)
 
-        if elapsed_time < 1000:
-            return f'{Colors.LPURPLE}{elapsed_time:.2f}{Colors.END} milliseconds!'
-        elif elapsed_time < 60000:
-            return f'{Colors.LPURPLE}{elapsed_time/1000:.2f}{Colors.END} seconds!'
+        if elapsed < 1:
+            format_elapsed = f'{Colors.LBLUE}{round(elapsed * 1000)}{Colors.END} miliseconds!'
+        elif elapsed < 60:
+            format_elapsed = f'{Colors.LBLUE}{elapsed}{Colors.END} seconds!'
         else:
-            minutes = int(elapsed_time / 60000)
-            seconds = int((elapsed_time % 60000) / 1000)
-            return f'{Colors.LPURPLE}{minutes}{Colors.END} minutes {Colors.LPURPLE}{seconds}{Colors.END} seconds!'
+            minutes = int(elapsed // 60)
+            seconds = int(elapsed % 60)
+            format_elapsed = f'{Colors.LBLUE}{minutes}{Colors.END} minutes {Colors.LBLUE}{seconds}{Colors.END} seconds!'
+
+        return format_elapsed
 
     @classmethod
     def __search_dorks(
@@ -117,7 +118,7 @@ class DorkSearch:
         start_from=0,
         ):
 
-        scraper, proxy_list = cls.__fetch_proxies()
+        scraper, proxy_list = cls.__fetch_proxies(info)
         proxy_limit = cls.__proxy_limiter(scraper, proxy_list)
         valid_proxies = cls.__working_proxies(scraper, proxy_limit, worker)
         proxy_pool = cycle(valid_proxies)
@@ -132,7 +133,7 @@ class DorkSearch:
                     proxies = {'http': proxy, 'https': proxy}
 
                     if info:
-                        print(f'Proxy: {Colors.BGREEN}{proxy}{Colors.END} | User-Agent: {Colors.LBLUE}{user_agent}{Colors.END}')
+                        print(f'Proxy: {Colors.BGREEN}{proxy}{Colors.END} | User-Agent: {Colors.LPURPLE}{user_agent}{Colors.END}')
 
                     future = executor.submit(
                         cls.__send_request,
@@ -151,24 +152,23 @@ class DorkSearch:
                         urls = cls.__handle_urls(response.text)
 
                         for idx, url in enumerate(urls[:amount], start=start_from + 1):
-                            if start_from >= amount:
-                                break
                             print(f'{Colors.WHITE}{idx}. {Colors.GREEN}{url}{Colors.END}')
                             cls.ALL_URLS.add(url)
                             start_from += 1
-
-                        sleep(uniform(2, 3))
+                        
+                        if start_from >= amount:
+                            break
 
                     except RequestException as exc:
                         if len(valid_proxies) == 0:
                             print(f'{Colors.LYELLOW}No more valid proxies available. {Colors.WHITE}Scraping new proxies...{Colors.END}\n')
-                            scraper, proxy_list = cls.__fetch_proxies()
+                            scraper, proxy_list = cls.__fetch_proxies(info)
                             proxy_limit = cls.__proxy_limiter(scraper, proxy_list)
                             valid_proxies = cls.__working_proxies(scraper, proxy_limit, worker)
                             proxy_pool = cycle(valid_proxies)
                         else:
                             if info:
-                                print(f'Exception: {Colors.RED}{exc}{Colors.END}')
+                                print(f'Exception: {Colors.RED}{type(exc).__name__}{Colors.END}')
                             valid_proxies.pop(0)
 
                         continue
@@ -197,9 +197,8 @@ class DorkSearch:
         search_started = time()
         cls.__search_dorks(dork, amount, worker, info)
         search_ended = time()
-        print(f'\n{Colors.LYELLOW}Searching time taken: {cls.__time_taken(search_started * 1000, search_ended * 1000)}')
-
+        print(f'\n{Colors.LYELLOW}Searching time taken: {cls.__time_taken(search_started)}')
         if file_name is None:
-            file_name = input('\nYour filename: ')
+            file_name = input('\nYour filename (Without Extension): ')
 
         cls.__save_to_file(dork, file_name) if save_output else cls.__save_to_file(dork, file_name)
