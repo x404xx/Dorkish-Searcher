@@ -152,7 +152,7 @@ class DorkSearch:
                     try:
                         response = future.result()
                         urls = cls.__handle_urls(response.text)
-                        if urls:
+                        if urls is not None:
                             for idx, url in enumerate(urls[:amount], start=start_from + 1):
                                 print(f'{Colors.WHITE}{idx}. {Colors.GREEN}{url}{Colors.END}')
                                 cls.ALL_URLS.add(url)
