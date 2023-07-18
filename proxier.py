@@ -55,6 +55,8 @@ class ProxyChecker:
         except RequestException:
             if self.info:
                 print(f'{Colors.WHITE}[{Colors.RED}DEAD{Colors.WHITE}]{Colors.END} {proxy}')
+            else:
+                pass
 
     def start_checking(
         self, proxy_limit: list, worker=50
