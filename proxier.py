@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-from random import choice
+from random import choice, shuffle
 
 from requests import RequestException, Session
 
@@ -14,8 +14,7 @@ class ProxyChecker:
         3: ('socks5', 'https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks5.txt')
     }
 
-    def __init__(self, info: bool):
-        self.info = info
+    def __init__(self):
         self.session = Session()
         self.valid_proxies = set()
 
@@ -30,6 +29,7 @@ class ProxyChecker:
 
         response = self.session.get(proxy_url)
         proxy_list = [f'{scheme}://{proxy.strip()}' for proxy in response.text.splitlines()]
+        shuffle(proxy_list)
         return proxy_list
 
     def limit_proxy(
@@ -45,18 +45,11 @@ class ProxyChecker:
         try:
             proxies = {'http': proxy, 'https': proxy}
             response = self.session.get(self.CHECK_URL, proxies=proxies, timeout=10)
-            if response.status_code == 200:
+            if 200 <= response.status_code <= 299:
                 self.valid_proxies.add(proxy)
-                if self.info:
-                    print(f'{Colors.WHITE}[{Colors.BGREEN}LIVE{Colors.WHITE}]{Colors.END} {proxy}')
-                else:
-                    print(f'Got ({Colors.BGREEN}{len(self.valid_proxies)}{Colors.END}) live proxy!', end='\r')
-
+                print(f'Got ({Colors.BGREEN}{len(self.valid_proxies)}{Colors.END}) live proxy!', end='\r')
         except RequestException:
-            if self.info:
-                print(f'{Colors.WHITE}[{Colors.RED}DEAD{Colors.WHITE}]{Colors.END} {proxy}')
-            else:
-                pass
+            pass
 
     def start_checking(
         self, proxy_limit: list, worker=50

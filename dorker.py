@@ -2,10 +2,9 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from itertools import cycle
 from json import dump
-from random import shuffle
-from re import findall
 from time import time
 
+from bs4 import BeautifulSoup as bs
 from requests import RequestException, Response, get
 from user_agent import generate_user_agent as ua
 
@@ -57,12 +56,13 @@ class DorkSearch:
 
     @staticmethod
     def __handle_urls(response: Response):
-        urls = findall(r'f"><a href="(https:.*?)"', response)
-        return urls if urls else None
+        soup = bs(response.content, 'html.parser')
+        href_list = [link.get('href') for link in soup.select('div.yuRUbf a[href]')]
+        return href_list
 
     @staticmethod
-    def __fetch_proxies(info: bool):
-        scraper = ProxyChecker(info)
+    def __fetch_proxies():
+        scraper = ProxyChecker()
         scheme, proxy_url = scraper.select_proxy()
         print(f'Auto selected protocol {Colors.CYAN}{scheme.upper()}{Colors.END}')
         proxy_list = scraper.get_proxy(scheme, proxy_url)
@@ -90,7 +90,7 @@ class DorkSearch:
             proxies_list = proxy_list
         else:
             proxies_list = scraper.limit_proxy(proxy_list, limiter)
-        shuffle(proxies_list)
+
         return proxies_list
 
     @staticmethod
@@ -120,7 +120,7 @@ class DorkSearch:
         start_from=0,
         ):
 
-        scraper, proxy_list = cls.__fetch_proxies(info)
+        scraper, proxy_list = cls.__fetch_proxies()
         proxy_limit = cls.__proxy_limiter(scraper, proxy_list)
         valid_proxies = cls.__working_proxies(scraper, proxy_limit, worker)
         proxy_pool = cycle(valid_proxies)
@@ -167,7 +167,7 @@ class DorkSearch:
                     except RequestException as exc:
                         if len(valid_proxies) == 0:
                             print(f'{Colors.LYELLOW}No more valid proxies available. {Colors.WHITE}Scraping new proxies...{Colors.END}\n')
-                            scraper, proxy_list = cls.__fetch_proxies(info)
+                            scraper, proxy_list = cls.__fetch_proxies()
                             proxy_limit = cls.__proxy_limiter(scraper, proxy_list)
                             valid_proxies = cls.__working_proxies(scraper, proxy_limit, worker)
                             proxy_pool = cycle(valid_proxies)
