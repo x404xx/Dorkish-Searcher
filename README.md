@@ -29,7 +29,7 @@ python main.py -d YOUR_DORK -w WORKER/THREADS -a URL_AMOUNT
 Running _**Dorkish**_ with full command-line + info + filename::
 
 ```python
-python main.py -d YOUR_DORK -w WORKER/THREADS -a URL_AMOUNT -i -s -f OUTPUT_FILENAME(Without Extension)
+python main.py -d YOUR_DORK -w WORKER/THREADS -a URL_AMOUNT -i -f OUTPUT_FILENAME(Without Extension)
 ```
 
 Alternatively, you can run _**Dorkish**_ without command-line. The program will handle anything for you ::
@@ -41,13 +41,13 @@ python main.py
 ## **Example Output**
 
 - Output - info :
-![Screenshot (20230620-082207)](https://github.com/x404xx/Dorkish-Searcher/assets/114883816/273977bd-31bc-4b9a-8339-fad619404707)
+![Screenshot (20230915-165327)](https://github.com/x404xx/Dorkish-Searcher/assets/114883816/4f4f816f-d888-418e-8fa8-a8beaad4ac85)
 
 - Output + info :
-![Screenshot (20230620-081910)](https://github.com/x404xx/Dorkish-Searcher/assets/114883816/2425ba42-2686-4b22-b91c-aeb1e93e5356)
+![Screenshot (20230915-165115)](https://github.com/x404xx/Dorkish-Searcher/assets/114883816/2d7daac9-b691-452a-8d79-547c7ac4c45c)
 
 - Example json file :
-![Screenshot (20230620-081949)](https://github.com/x404xx/Dorkish-Searcher/assets/114883816/e07c2dca-a9f6-45e0-a533-d1dcb9de7612)
+![Screenshot (20230915-165533)](https://github.com/x404xx/Dorkish-Searcher/assets/114883816/21300f66-2452-414a-8bd9-1d821847c596)
 
 ## **Legal Disclaimer**
 
