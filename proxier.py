@@ -1,7 +1,8 @@
+import random
+import time
 from concurrent.futures import ThreadPoolExecutor
-from random import choice, shuffle
 
-from requests import RequestException, Session
+import requests
 
 from colors import Colors
 
@@ -9,36 +10,58 @@ from colors import Colors
 class ProxyChecker:
     CHECK_URL = 'https://www.bing.com/'
     PROXY_MENU = {
-        1: ('http', 'https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt'),
-        2: ('socks4', 'https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks4.txt'),
-        3: ('socks5', 'https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks5.txt')
+        'http': 'https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt',
+        'socks4': 'https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks4.txt',
+        'socks5': 'https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks5.txt'
     }
 
     def __init__(self):
-        self.session = Session()
-        self.valid_proxies = set()
+        self.session = requests.Session()
+        self.live_proxies = set()
+        self.dead_count = 0
+        self.limiter = None
 
-    def select_proxy(self):
-        proxy_choice = choice(list(self.PROXY_MENU.keys()))
-        scheme, proxy_url = self.PROXY_MENU.get(proxy_choice)
-        return scheme, proxy_url
+    def __del__(self):
+        self.session.close()
 
-    def get_proxy(
-        self, scheme: str, proxy_url: str
+    def start_timer(
+        self, started_time: float
         ):
 
-        response = self.session.get(proxy_url)
-        proxy_list = [f'{scheme}://{proxy.strip()}' for proxy in response.text.splitlines()]
-        shuffle(proxy_list)
+        elapsed = round((time.time() - started_time), 2)
+        return (
+            f'{Colors.BGREEN}{round(elapsed * 1000)}{Colors.END} miliseconds!'
+            if elapsed < 1
+            else f'{Colors.BGREEN}{elapsed}{Colors.END} seconds!'
+            if elapsed < 60
+            else f'{Colors.BGREEN}{int(elapsed // 60)}{Colors.END} minutes {Colors.BGREEN}{int(elapsed % 60)}{Colors.END} seconds!'
+        )
+
+    def _fetch_proxy_list(self):
+        protocol = random.choice(list(self.PROXY_MENU.keys()))
+        print(f'Auto selected protocol {Colors.CYAN}{protocol.upper()}{Colors.END}')
+        response = self.session.get(self.PROXY_MENU.get(protocol))
+        proxy_list = [f'{protocol}://{proxy.strip()}' for proxy in response.text.splitlines()]
+        print(f'Found {Colors.GREEN}{len(proxy_list)}{Colors.END} proxies!')
+        random.shuffle(proxy_list)
         return proxy_list
 
-    def limit_proxy(
-        self, proxy_list: list, proxy_limiter: str
+    def get_proxy_limit(self):
+        proxy_list = self._fetch_proxy_list()
+        self.limiter = input('How many proxies should be checked (Press ENTER to skip limit): ')
+        proxy_limit = proxy_list if not self.limiter.strip() else proxy_list[:int(self.limiter)]
+        return proxy_limit
+
+    def working_proxy_iterator(
+        self, proxy_limit: list, worker: int
         ):
 
-        return proxy_list[:int(proxy_limiter)]
+        proxy_started = time.time()
+        self._start_checking(proxy_limit, worker)
+        print(f'\n\n{Colors.LYELLOW}Checking proxy time taken: {self.start_timer(proxy_started)}\n')
+        return iter(list(self.live_proxies))
 
-    def __check_proxy(
+    def _check_proxy(
         self, proxy: str
         ):
 
@@ -46,14 +69,18 @@ class ProxyChecker:
             proxies = {'http': proxy, 'https': proxy}
             response = self.session.get(self.CHECK_URL, proxies=proxies, timeout=10)
             if 200 <= response.status_code <= 299:
-                self.valid_proxies.add(proxy)
-                print(f'Got ({Colors.BGREEN}{len(self.valid_proxies)}{Colors.END}) live proxy!', end='\r')
-        except RequestException:
+                self.live_proxies.add(proxy)
+            else:
+                self.dead_count += 1
+        except requests.RequestException:
+            self.dead_count += 1
             pass
 
-    def start_checking(
-        self, proxy_limit: list, worker=50
+        print(f'{Colors.WHITE}Live{Colors.END}: ({Colors.BGREEN}{len(self.live_proxies)}{Colors.END}) {Colors.WHITE}Dead{Colors.END}: ({Colors.RED}{self.dead_count}{Colors.END})', end='\r')
+
+    def _start_checking(
+        self, proxy_limit: list, worker: int
         ):
 
         with ThreadPoolExecutor(max_workers=worker) as executor:
-            executor.map(self.__check_proxy, proxy_limit)
+            executor.map(self._check_proxy, proxy_limit)

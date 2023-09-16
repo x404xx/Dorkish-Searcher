@@ -1,209 +1,148 @@
+import json
+import os
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from itertools import cycle
-from json import dump
-from time import time
 
-from bs4 import BeautifulSoup as bs
-from requests import RequestException, Response, get
-from user_agent import generate_user_agent as ua
+import requests
+from bs4 import BeautifulSoup
+from user_agent import generate_user_agent
 
 from colors import Colors
 from proxier import ProxyChecker
 
 
-class DorkSearch:
+class DorkSearch(ProxyChecker):
     BASE_URL = 'https://www.google.com/search'
     ALL_URLS = set()
 
-    @classmethod
-    def __send_request(
-        cls,
+    def __init__(self):
+        super().__init__()
+
+    def _send_request(
+        self,
         dork: str,
         amount: int,
         proxies: dict,
-        user_agent: str,
-        timeout: int,
-        lang: str
+        user_agent: str
         ):
 
-        response = get(
-            cls.BASE_URL,
+        response = self.session.get(
+            self.BASE_URL,
             headers={'User-Agent': user_agent},
-            params={
-                'q': dork,
-                'num': amount + 2,
-                'hl': lang,
-            },
+            params={'q': dork, 'num': amount + 2, 'hl': 'en'},
             proxies=proxies,
-            timeout=timeout,
+            timeout=15
         )
         response.raise_for_status()
         return response
 
-    @classmethod
-    def __save_to_file(
-        cls, dork: str, file_name: str
+    def _save_to_file(
+        self, dork: str, file_name: str
         ):
 
-        if cls.ALL_URLS:
-            results_dict = {dork: list(cls.ALL_URLS)}
-            with open(f'{file_name}.json', 'a') as file:
-                dump(results_dict, file, indent=4)
+        if self.ALL_URLS:
+            results_dict = {dork: list(self.ALL_URLS)}
+
+            if os.path.exists(f'{file_name}.json'):
+                overwrite = input(f'{Colors.RED}Warning: Output file already exists. Do you want to overwrite it? (y/n): {Colors.END}')
+                if overwrite.lower() != 'y':
+                    file_name = input('Enter a new filename (Without Extension): ')
+
+            with open(f'{file_name}.json', 'w') as file:
+                json.dump(results_dict, file, indent=4)
             print(f'\n{Colors.BYELLOW}Output saved successfully.{Colors.END}\n')
+
         else:
             print(f'\n{Colors.BYELLOW}No output to save.{Colors.END}\n')
 
-    @staticmethod
-    def __handle_urls(response: Response):
-        soup = bs(response.content, 'html.parser')
+    def _handle_urls(
+        self, response: requests.Response
+        ):
+
+        soup = BeautifulSoup(response.content, 'html.parser')
         href_list = [link.get('href') for link in soup.select('div.yuRUbf a[href]')]
         return href_list
 
-    @staticmethod
-    def __fetch_proxies():
-        scraper = ProxyChecker()
-        scheme, proxy_url = scraper.select_proxy()
-        print(f'Auto selected protocol {Colors.CYAN}{scheme.upper()}{Colors.END}')
-        proxy_list = scraper.get_proxy(scheme, proxy_url)
-        print(f'Found {Colors.GREEN}{len(proxy_list)}{Colors.END} proxies!')
-        return scraper, proxy_list
-
-    @classmethod
-    def __working_proxies(
-        cls, scraper: ProxyChecker, proxy_limit: list, worker: int
-        ):
-
-        proxy_started = time()
-        scraper.start_checking(proxy_limit, worker)
-        print(f'\n\n{Colors.LYELLOW}Checking proxy time taken: {cls.__time_taken(proxy_started)}\n')
-        valid_proxies = list(scraper.valid_proxies)
-        return valid_proxies
-
-    @staticmethod
-    def __proxy_limiter(
-        scraper: ProxyChecker, proxy_list: list
-        ):
-
-        limiter = input('How many proxies should be check (type \'!skip\' to skip limit): ').lower()
-        if limiter == '!skip':
-            proxies_list = proxy_list
-        else:
-            proxies_list = scraper.limit_proxy(proxy_list, limiter)
-
-        return proxies_list
-
-    @staticmethod
-    def __time_taken(started_time):
-        elapsed = round((time() - started_time), 2)
-
-        if elapsed < 1:
-            format_elapsed = f'{Colors.LBLUE}{round(elapsed * 1000)}{Colors.END} miliseconds!'
-        elif elapsed < 60:
-            format_elapsed = f'{Colors.LBLUE}{elapsed}{Colors.END} seconds!'
-        else:
-            minutes = int(elapsed // 60)
-            seconds = int(elapsed % 60)
-            format_elapsed = f'{Colors.LBLUE}{minutes}{Colors.END} minutes {Colors.LBLUE}{seconds}{Colors.END} seconds!'
-
-        return format_elapsed
-
-    @classmethod
-    def __search_dorks(
-        cls,
+    def _search_dorks(
+        self,
         dork: str,
         amount: int,
-        worker=50,
-        info=False,
-        timeout=15,
-        lang='en',
-        start_from=0,
+        worker: int,
+        info: bool,
+        start_from=0
         ):
 
-        scraper, proxy_list = cls.__fetch_proxies()
-        proxy_limit = cls.__proxy_limiter(scraper, proxy_list)
-        valid_proxies = cls.__working_proxies(scraper, proxy_limit, worker)
-        proxy_pool = cycle(valid_proxies)
+        proxy_limit = self.get_proxy_limit()
+
+        color_template = f'{Colors.GREEN}{{}}{Colors.RED}({Colors.WHITE}{{}}{Colors.RED}){Colors.END}'
+        print(f"\nStarted: {color_template.format('Dork', dork)}, {color_template.format('Amount', amount)}, {color_template.format('Worker', worker)}, {color_template.format('Limiter', self.limiter)}, {color_template.format('Info', info)}\n")
+
+        proxy_iterator = self.working_proxy_iterator(proxy_limit, worker)
 
         while start_from < amount:
             with ThreadPoolExecutor(max_workers=worker) as executor:
                 futures = []
 
                 for _ in range(amount):
-                    proxy = str(next(proxy_pool))
-                    user_agent = str(ua())
+                    try:
+                        proxy = str(next(proxy_iterator))
+                    except StopIteration:
+                        print(f'\n{Colors.LYELLOW}No more valid proxies available. {Colors.WHITE}Scraping new proxies...{Colors.END}\n')
+                        self.live_proxies.clear()
+                        self.dead_count = 0
+                        proxy_limit = self.get_proxy_limit()
+                        proxy_iterator = self.working_proxy_iterator(proxy_limit, worker)
+                        proxy = str(next(proxy_iterator))
+
+                    user_agent = str(generate_user_agent())
                     proxies = {'http': proxy, 'https': proxy}
 
                     if info:
                         print(f'Proxy: {Colors.BGREEN}{proxy}{Colors.END} | User-Agent: {Colors.LPURPLE}{user_agent}{Colors.END}')
 
-                    future = executor.submit(
-                        cls.__send_request,
-                        dork,
-                        amount - start_from,
-                        proxies,
-                        user_agent,
-                        timeout,
-                        lang
-                    )
+                    future = executor.submit(self._send_request, dork, amount - start_from, proxies, user_agent)
                     futures.append(future)
 
+                search_started = time.time()
                 for future in as_completed(futures):
                     try:
                         response = future.result()
-                        urls = cls.__handle_urls(response.text)
-                        if urls is not None:
-                            for idx, url in enumerate(urls[:amount], start=start_from + 1):
-                                print(f'{Colors.WHITE}{idx}. {Colors.GREEN}{url}{Colors.END}')
-                                cls.ALL_URLS.add(url)
-                                start_from += 1
+                        if response:
+                            urls = self._handle_urls(response)
+                            if urls is not None:
+                                for idx, url in enumerate(urls[:amount], start=start_from + 1):
+                                    print(f'{Colors.WHITE}{idx}. {Colors.GREEN}{url}{Colors.END}')
+                                    self.ALL_URLS.add(url)
+                                    start_from += 1
 
-                            if start_from >= amount:
-                                break
-                        else:
-                            print(f'\n{Colors.WHITE}No result found with the given dork{Colors.END} "{Colors.RED}{dork}{Colors.END}"\n')
-                            sys.exit(0)
+                                if start_from >= amount:
+                                    print(f'\n{Colors.LYELLOW}Searching time taken: {self.start_timer(search_started)}\n\n{Colors.WHITE}Finished! Please wait closing remaining thread!{Colors.END}')
+                                    break
+                            else:
+                                print(f'\n{Colors.WHITE}No result found with the given dork{Colors.END} "{Colors.RED}{dork}{Colors.END}"\n')
+                                sys.exit(0)
 
-                    except RequestException as exc:
-                        if len(valid_proxies) == 0:
-                            print(f'{Colors.LYELLOW}No more valid proxies available. {Colors.WHITE}Scraping new proxies...{Colors.END}\n')
-                            scraper, proxy_list = cls.__fetch_proxies()
-                            proxy_limit = cls.__proxy_limiter(scraper, proxy_list)
-                            valid_proxies = cls.__working_proxies(scraper, proxy_limit, worker)
-                            proxy_pool = cycle(valid_proxies)
-                        else:
-                            if info:
-                                print(f'Exception: {Colors.RED}{type(exc).__name__}{Colors.END}')
-                            valid_proxies.pop(0)
-
+                    except requests.RequestException as exc:
+                        if info:
+                            print(f'Exception: {Colors.RED}{type(exc).__name__}{Colors.END}')
                         continue
 
-    @classmethod
     def run(
-        cls,
-        dork=None,
-        worker=None,
-        amount=None,
+        self,
+        dork: str=None,
+        worker: int=None,
+        amount: int=None,
+        file_name: str=None,
         info=False,
-        save_output=False,
-        file_name=None,
         ):
 
-        if dork is None:
-            dork = input('Dork: ')
-        if amount is None:
-            amount = int(input('How many URLs: '))
-        if worker is None:
-            worker = int(input('How many worker (Default 50): '))
-        if not info:
-            option = input('Do want to get info? (y/n): ').lower()
-            info = True if option == 'y' else False
+        dork = dork or input('Dork: ')
+        amount = amount or int(input('How many URLs: '))
+        worker = worker or int(input('How many workers (Press ENTER for default 50): ') or 50)
+        info = info or input('Do want to get info? (y/n): ').lower() == 'y'
 
-        search_started = time()
-        cls.__search_dorks(dork, amount, worker, info)
-        print(f'\n{Colors.LYELLOW}Searching time taken: {cls.__time_taken(search_started)}')
+        self._search_dorks(dork, amount, worker, info)
 
-        if file_name is None:
-            file_name = input('\nYour filename (Without Extension): ')
-
-        cls.__save_to_file(dork, file_name) if save_output else cls.__save_to_file(dork, file_name)
+        file_name = file_name or input('\nYour filename (Without Extension): ')
+        self._save_to_file(dork, file_name)
